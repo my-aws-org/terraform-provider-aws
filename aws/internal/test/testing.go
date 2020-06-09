@@ -8,10 +8,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
+const (
+	sentinelIndex = "*"
+)
+
 // TestCheckTypeSetElemNestedAttrs is a resource.TestCheckFunc that accepts a resource
-// name, an attribute name and depth which targets a TypeSet, as well as a value
-// map to verify. The function verifies that the TypeSet attribute exists, and that
-// an element matches all the values in the map.
+// name, an attribute path, which should use the sentinel value '*' for indexing
+// into a TypeSet. The function verifies that an element matches the whole value
+// map.
 //
 // Use this function over SDK provided TestCheckFunctions when validating a
 // TypeSet where its elements are a nested object with their own attrs/values.
@@ -19,93 +23,92 @@ import (
 // Please note, if the provided value map is not granular enough, there exists
 // the possibility you match an element you were not intending to, in the TypeSet.
 // Provide a full mapping of attributes to be sure the unique element exists.
-func TestCheckTypeSetElemNestedAttrs(resourceName, attrName string, depth int, values map[string]string) resource.TestCheckFunc {
+func TestCheckTypeSetElemNestedAttrs(res, attr string, values map[string]string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		ms := s.RootModule()
-		rs, ok := ms.Resources[resourceName]
+		rs, ok := ms.Resources[res]
 		if !ok {
-			return fmt.Errorf("Not found: %s in %s", resourceName, ms.Path)
+			return fmt.Errorf("Not found: %s in %s", res, ms.Path)
 		}
 
 		is := rs.Primary
 		if is == nil {
-			return fmt.Errorf("No primary instance: %s in %s", resourceName, ms.Path)
+			return fmt.Errorf("No primary instance: %s in %s", res, ms.Path)
 		}
 
 		matches := make(map[string]int)
-
+		attrParts := strings.Split(attr, ".")
 		for stateKey, stateValue := range is.Attributes {
-			parts := strings.Split(stateKey, ".")
+			stateKeyParts := strings.Split(stateKey, ".")
 			// a Set/List item with nested attrs would have a flatmap address of
 			// at least length 3
 			// foo.0.name = "bar"
-			d := len(parts) - 3
-			if d < 0 {
+			if len(stateKeyParts) < 3 {
 				continue
 			}
-			attr := parts[d]
-			if attr == attrName && d == depth-1 {
-				// ensure this is a Set/List
-				if _, exists := is.Attributes[strings.Join(parts[:d+1], ".")+".#"]; !exists {
-					return fmt.Errorf("%q attr %q is not TypeSet", resourceName, attrName)
+			var pathMatch bool
+			for i := range attrParts {
+				if attrParts[i] != stateKeyParts[i] && attrParts[i] != sentinelIndex {
+					break
 				}
-				elementId := parts[d+1]
-				nestedAttr := strings.Join(parts[d+2:], ".")
-				// check if the nestedAttr exists in the passed values map
-				// if it does, and matches, increment the matches count
-				if v, exists := values[nestedAttr]; exists && stateValue == v {
-					matches[elementId] = matches[elementId] + 1
-					// exit if there is an element that is a full match
-					if matches[elementId] == len(values) {
-						return nil
-					}
+				if i == len(attrParts)-1 {
+					pathMatch = true
 				}
 			}
-		}
-
-		return fmt.Errorf("No TypeSet element in %q with attr name %q at depth %d, with nested attrs %#v in state: %#v", resourceName, attrName, depth, values, is.Attributes)
-	}
-}
-
-// TestCheckTypeSetElemAttr is a resource.TestCheckFunc that accepts a resource
-// name, an attribute name and depth which targets a TypeSet, as well as a value
-// to verify. The function verifies that the TypeSet attribute exists, and that
-// an element matches the passed value.
-//
-// Use this function over SDK provided TestCheckFunctions when validating a
-// TypeSet where its elements are a simple value
-func TestCheckTypeSetElemAttr(resourceName, attrName string, depth int, value string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		ms := s.RootModule()
-		rs, ok := ms.Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("Not found: %s in %s", resourceName, ms.Path)
-		}
-
-		is := rs.Primary
-		if is == nil {
-			return fmt.Errorf("No primary instance: %s in %s", resourceName, ms.Path)
-		}
-
-		for stateKey, stateValue := range is.Attributes {
-			parts := strings.Split(stateKey, ".")
-			// a Set/List item would have a flatmap address of at least length 2
-			// foo.0 = "bar"
-			d := len(parts) - 2
-			if d < 0 {
+			if !pathMatch {
 				continue
 			}
-			attr := parts[d]
-			if attr == attrName && d == depth-1 && stateValue == value {
-				// ensure this is a Set/List
-				if _, exists := is.Attributes[strings.Join(parts[:d+1], ".")+".#"]; !exists {
-					return fmt.Errorf("%q attr %q is not TypeSet", resourceName, attrName)
-				} else {
+			elementId := stateKeyParts[len(attrParts)-1]
+			nestedAttr := strings.Join(stateKeyParts[len(attrParts):], ".")
+			if v, keyExists := values[nestedAttr]; keyExists && v == stateValue {
+				matches[elementId] = matches[elementId] + 1
+				if matches[elementId] == len(values) {
 					return nil
 				}
 			}
 		}
 
-		return fmt.Errorf("No TypeSet element in %q with attr name %q at depth %d, with value %q in state: %#v", resourceName, attrName, depth, value, is.Attributes)
+		return fmt.Errorf("%q no TypeSet element %q, with nested attrs %#v in state: %#v", res, attr, values, is.Attributes)
+	}
+}
+
+// TestCheckTypeSetElemAttr is a resource.TestCheckFunc that accepts a resource
+// name, an attribute path, which should use the sentinel value '*' for indexing
+// into a TypeSet. The function verifies that an element matches the provided
+// value.
+//
+// Use this function over SDK provided TestCheckFunctions when validating a
+// TypeSet where its elements are a simple value
+func TestCheckTypeSetElemAttr(res, attr, value string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		ms := s.RootModule()
+		rs, ok := ms.Resources[res]
+		if !ok {
+			return fmt.Errorf("Not found: %s in %s", res, ms.Path)
+		}
+
+		is := rs.Primary
+		if is == nil {
+			return fmt.Errorf("No primary instance: %s in %s", res, ms.Path)
+		}
+
+		attrParts := strings.Split(attr, ".")
+		for stateKey, stateValue := range is.Attributes {
+			if stateValue == value {
+				stateKeyParts := strings.Split(stateKey, ".")
+				if len(stateKeyParts) == len(attrParts) {
+					for i := range attrParts {
+						if attrParts[i] != stateKeyParts[i] && attrParts[i] != sentinelIndex {
+							break
+						}
+						if i == len(attrParts)-1 {
+							return nil
+						}
+					}
+				}
+			}
+		}
+
+		return fmt.Errorf("%q no TypeSet element %q, with value %q in state: %#v", res, attr, value, is.Attributes)
 	}
 }
