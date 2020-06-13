@@ -15,7 +15,7 @@ function set_hostname()  {
    echo "preserve_hostname: true" >> /etc/cloud/cloud.cfg
 }
 
-function install_nginx {
+function install_nginx() {
     sudo apt-get update
     sudo apt-get install nginx
 }
