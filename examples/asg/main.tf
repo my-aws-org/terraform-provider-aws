@@ -8,7 +8,7 @@ locals {
 }
 
 resource "aws_elb" "web-elb" {
-  name = "terraform-web-elb"
+  name = "terraform-web-asg-elb"
 
   # The same availability zone as our instances
   availability_zones = "${local.availability_zones}"
