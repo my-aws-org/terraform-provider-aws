@@ -3,12 +3,6 @@ provider "aws" {
   region = "${var.aws_region}"
 }
 
-# Specify the bootstrap file
-#data "template_file" "bootstrap_nginx" {
-#  template = "${file("${path.cwd}/bootstrap_nginx.tpl")}"
-  #template = "${file("bootstrap_nginx.tpl")}"
-#}
-
 # Create a VPC to launch our instances into
 resource "aws_vpc" "default" {
   cidr_block = "10.0.0.0/16"
@@ -143,3 +137,29 @@ resource "aws_instance" "web" {
 	}
 
 }
+
+# #!/bin/bash
+
+# function set_hostname()  {
+#    sudo apt-get -y install wget
+#    local_ip=`wget -q -O - http://169.254.169.254/latest/meta-data/local-ipv4`
+#    HOSTNAME=thiru_nginx-$local_ip
+#    hostname $HOSTNAME
+#    echo "HOSTNAME=$HOSTNAME" > /etc/hostname
+#    echo "HOSTNAME=$HOSTNAME" >> /etc/sysconfig/network
+#    hostnamectl set-hostname $HOSTNAME --static
+#    echo "preserve_hostname: true" >> /etc/cloud/cloud.cfg
+# }
+
+# function install_nginx() {
+#     sudo apt-get update
+#     sudo apt-get -y install nginx
+# }
+
+# function start_nginx()  {
+#   sudo service nginx restart
+# }
+
+# set_hostname
+# install_nginx
+# start_nginx
