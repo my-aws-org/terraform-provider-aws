@@ -8,7 +8,7 @@ locals {
 }
 
 resource "aws_elb" "web-elb" {
-  name = "terraform-example-elb"
+  name = "terraform-web-elb"
 
   # The same availability zone as our instances
   availability_zones = "${local.availability_zones}"
@@ -31,7 +31,7 @@ resource "aws_elb" "web-elb" {
 
 resource "aws_autoscaling_group" "web-asg" {
   availability_zones   = "${local.availability_zones}"
-  name                 = "terraform-example-asg"
+  name                 = "terraform-web-asg"
   max_size             = "${var.asg_max}"
   min_size             = "${var.asg_min}"
   desired_capacity     = "${var.asg_desired}"
@@ -47,6 +47,11 @@ resource "aws_autoscaling_group" "web-asg" {
   }
 }
 
+resource "aws_key_pair" "auth" {
+  key_name   = "${var.key_name}"
+  public_key = "${var.public_key_path}"
+}
+
 resource "aws_launch_configuration" "web-lc" {
   name          = "terraform-example-lc"
   image_id      = "${lookup(var.aws_amis, var.aws_region)}"
@@ -55,7 +60,8 @@ resource "aws_launch_configuration" "web-lc" {
   # Security group
   security_groups = ["${aws_security_group.default.id}"]
   user_data       = "${file("userdata.sh")}"
-  key_name        = "${var.key_name}"
+  #key_name        = "${var.key_name}"
+  key_name = "${aws_key_pair.auth.id}"
 }
 
 # Our default security group to access
