@@ -3,6 +3,12 @@ provider "aws" {
   region = "${var.aws_region}"
 }
 
+# Specify the bootstrap file
+data "template_file" "bootstrap_nginx" {
+  template = "${file("${path.module}/bootstrap_nginx.tpl")}"
+}
+
+
 # Create a VPC to launch our instances into
 resource "aws_vpc" "default" {
   cidr_block = "10.0.0.0/16"
@@ -132,11 +138,11 @@ resource "aws_instance" "web" {
   # We run a remote provisioner on the instance after creating it.
   # In this case, we just install nginx and start it. By default,
   # this should be on port 80
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get -y update",
-      "sudo apt-get -y install nginx",
-      "sudo service nginx start",
-    ]
-  }
+  #provisioner "remote-exec" {
+  #  inline = [
+  #    "sudo apt-get -y update",
+  #    "sudo apt-get -y install nginx",
+  #    "sudo service nginx start",
+  #  ]
+  #}
 }
