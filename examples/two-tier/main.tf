@@ -1,26 +1,6 @@
 # Specify the provider and access details
 provider "aws" {
   region = "${var.aws_region}"
-  # locals {
-  #   instance-userdata = <<EOF
-  #   #!/bin/bash
-  #   export PATH=$PATH:/usr/local/bin
-  #   sudo apt-get -y install wget
-  #   local_ip=`wget -q -O - http://169.254.169.254/latest/meta-data/local-ipv4`
-  #   HOSTNAME=thiru_nginx-$local_ip
-  #   hostname $HOSTNAME
-  #   echo "HOSTNAME=$HOSTNAME" > /etc/hostname
-  #   echo "HOSTNAME=$HOSTNAME" >> /etc/sysconfig/network
-  #   hostnamectl set-hostname $HOSTNAME --static
-  #   echo "preserve_hostname: true" >> /etc/cloud/cloud.cfg
-
-  #   sudo apt-get update
-  #   sudo apt-get install nginx
-
-  #   sudo service nginx restart
-
-  #   EOF
-  # }
 }
 
 # Specify the bootstrap file
@@ -154,4 +134,30 @@ resource "aws_instance" "web" {
   # environment it's more common to have a separate private subnet for
   # backend instances.
   subnet_id = "${aws_subnet.default.id}"
+
+  user_data = << EOF
+
+    #!/bin/bash
+    export PATH=$PATH:/usr/local/bin
+    sudo apt-get -y install wget
+    local_ip=`wget -q -O - http://169.254.169.254/latest/meta-data/local-ipv4`
+    HOSTNAME=thiru_nginx-$local_ip
+    hostname $HOSTNAME
+    echo "HOSTNAME=$HOSTNAME" > /etc/hostname
+    echo "HOSTNAME=$HOSTNAME" >> /etc/sysconfig/network
+    hostnamectl set-hostname $HOSTNAME --static
+    echo "preserve_hostname: true" >> /etc/cloud/cloud.cfg
+
+    sudo apt-get update
+    sudo apt-get install nginx
+
+    sudo service nginx restart
+
+  EOF
+
+  tags = {
+		name = "terraform-firsts"	
+		cost-center = "free"
+	}
+
 }
