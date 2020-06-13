@@ -25,8 +25,8 @@ provider "aws" {
 
 # Specify the bootstrap file
 data "template_file" "bootstrap_nginx" {
-  #template = "${file("${path.cwd}/bootstrap_nginx.tpl")}"
-  template = "${file("bootstrap_nginx.tpl")}"
+  template = "${file("${path.cwd}/bootstrap_nginx.tpl")}"
+  #template = "${file("bootstrap_nginx.tpl")}"
 }
 
 # Create a VPC to launch our instances into
