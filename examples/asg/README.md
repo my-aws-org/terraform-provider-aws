@@ -33,3 +33,4 @@ To remove the stack
 ```
  terraform destroy -var 'key_name={your_key_name}'
 ```
+
