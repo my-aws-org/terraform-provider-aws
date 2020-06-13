@@ -24,6 +24,6 @@ function start_nginx()  {
   sudo service nginx restart
 }
 
-#set_hostname
+set_hostname
 install_nginx
 start_nginx
