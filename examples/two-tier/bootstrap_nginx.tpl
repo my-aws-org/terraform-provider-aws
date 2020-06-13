@@ -16,7 +16,8 @@ function set_hostname()  {
 }
 
 function install_nginx {
-    sudo apt-get -y install nginx
+    sudo apt-get update
+    sudo apt-get install nginx
 }
 
 function start_nginx()  {
