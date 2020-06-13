@@ -4,10 +4,10 @@ provider "aws" {
 }
 
 # Specify the bootstrap file
-data "template_file" "bootstrap_nginx" {
-  template = "${file("${path.cwd}/bootstrap_nginx.tpl")}"
+#data "template_file" "bootstrap_nginx" {
+#  template = "${file("${path.cwd}/bootstrap_nginx.tpl")}"
   #template = "${file("bootstrap_nginx.tpl")}"
-}
+#}
 
 # Create a VPC to launch our instances into
 resource "aws_vpc" "default" {
@@ -135,9 +135,7 @@ resource "aws_instance" "web" {
   # backend instances.
   subnet_id = "${aws_subnet.default.id}"
 
-  user_data_base64 = << EOF
-  IyEvYmluL2Jhc2gKICBleHBvcnQgUEFUSD0kUEFUSDovdXNyL2xvY2FsL2JpbgogIHN1ZG8gYXB0LWdldCAteSBpbnN0YWxsIHdnZXQKICBsb2NhbF9pcD1gd2dldCAtcSAtTyAtIGh0dHA6Ly8xNjkuMjU0LjE2OS4yNTQvbGF0ZXN0L21ldGEtZGF0YS9sb2NhbC1pcHY0YAogIEhPU1ROQU1FPXRoaXJ1X25naW54LSRsb2NhbF9pcAogIGhvc3RuYW1lICRIT1NUTkFNRQogIGVjaG8gIkhPU1ROQU1FPSRIT1NUTkFNRSIgPiAvZXRjL2hvc3RuYW1lCiAgZWNobyAiSE9TVE5BTUU9JEhPU1ROQU1FIiA+PiAvZXRjL3N5c2NvbmZpZy9uZXR3b3JrCiAgaG9zdG5hbWVjdGwgc2V0LWhvc3RuYW1lICRIT1NUTkFNRSAtLXN0YXRpYwogIGVjaG8gInByZXNlcnZlX2hvc3RuYW1lOiB0cnVlIiA+PiAvZXRjL2Nsb3VkL2Nsb3VkLmNmZwogIHN1ZG8gYXB0LWdldCB1cGRhdGUKICBzdWRvIGFwdC1nZXQgaW5zdGFsbCBuZ2lueAogIHN1ZG8gc2VydmljZSBuZ2lueCByZXN0YXJ0
-  EOF
+  user_data           = "${file("${path.module}/bootstrap_nginx.tpl")}"
 
   tags = {
 		name = "terraform-firsts"	
