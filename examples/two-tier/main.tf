@@ -65,6 +65,14 @@ resource "aws_security_group" "default" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Openvpn access from anywhere
+  ingress {
+    from_port   = 1194
+    to_port     = 1194
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   # HTTP access from the VPC
   ingress {
     from_port   = 80
